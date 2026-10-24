@@ -81,9 +81,15 @@ def get_team_recent_matches(token, team_id, comp_code, limit=10):
     data = api_get(
         f"/teams/{team_id}/matches",
         token,
-        {"status": "FINISHED", "competitions": comp_code, "limit": limit},
+        {"status": "FINISHED", "limit": limit},
     )
-    return data.get("matches", [])
+    matches = data.get("matches", [])
+
+    # Garder uniquement les matchs de la compétition sélectionnée.
+    return [
+        match for match in matches
+        if (match.get("competition") or {}).get("code") == comp_code
+    ]
 
 def team_goal_rates(matches, team_id, venue):
     # venue: "HOME" or "AWAY"; select matches played at that venue
