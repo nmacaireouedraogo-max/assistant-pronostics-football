@@ -32,23 +32,47 @@ with st.sidebar:
     days_ahead = st.slider("Chercher les matchs des prochains jours", 1, 14, 7)
     st.caption("La disponibilité des compétitions et statistiques dépend de votre forfait API.")
 
+
 def api_get(path, token, params=None):
     if not token:
-        raise ValueError("Saisissez votre jeton API dans le panneau de configuration.")
+        raise ValueError(
+            "Saisissez votre jeton API dans le panneau de configuration."
+        )
+
     response = requests.get(
         f"{API_BASE}{path}",
         headers={"X-Auth-Token": token},
         params=params or {},
         timeout=25,
     )
+
     if response.status_code == 401:
-        raise RuntimeError("Jeton API invalide ou non autorisé (HTTP 401).")
+        raise RuntimeError(
+            "Jeton API invalide ou non autorisé (HTTP 401)."
+        )
+
     if response.status_code == 403:
-        raise RuntimeError("Cette donnée/compétition n'est pas incluse dans votre forfait (HTTP 403).")
+        raise RuntimeError(
+            "Cette donnée ou compétition n'est pas incluse dans votre forfait (HTTP 403)."
+        )
+
     if response.status_code == 429:
-        raise RuntimeError("Limite de requêtes API atteinte (HTTP 429). Réessayez plus tard.")
-    response.raise_for_status()
-    return response.json()
+        raise RuntimeError(
+            "Limite de requêtes API atteinte (HTTP 429). Réessayez plus tard."
+        )
+
+    if not response.ok:
+        raise RuntimeError(
+            f"Erreur API HTTP {response.status_code} : {response.text}"
+        )
+
+    try:
+        return response.json()
+    except ValueError:
+        raise RuntimeError(
+            "L'API a renvoyé une réponse qui n'est pas au format JSON."
+        )
+        
 
 def get_upcoming_matches(token, comp_code, days):
     today = date.today()
